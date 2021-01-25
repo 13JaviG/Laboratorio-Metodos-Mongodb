@@ -1,0 +1,68 @@
+▸Mostrar todos los documentos, con todos sus campos, que contienen avistamientos producidos en el estado de California (“CA”).
+
+db.COLECCION.find({state: "CA"}).pretty()
+
+▸Mostrar solamente la fecha y hora del avistamiento (campo «ocurred_date_time»), forma («shape») de los avistamientos producidos en el estado de California (“CA”).
+
+db.COLECCION.find({state: "CA"},{occurred_date_time: 1, shape: 1, _id: 0}).pretty()
+
+▸Listar todos los tipos de formas reportadas, sin que estas aparezcan repetidas.
+
+db.COLECCION.distinct("shape")
+
+▸Encontrar el número total de documentos que no tienen el campo «ocurred_date_time».
+
+db.COLECCION.find({occurred_date_time: null}).pretty()
+
+▸Encontrar el número total de documentos en los que falta por lo menos un campo por asignar. 
+
+db.COLECCION.find({"$or":[{id:null},{city: null},{state: null},{shape: null},{summary: null},{details_url:null}, {posted_date: null},{occurred_date_time: null}]}).pretty().count()
+
+▸Contar el número de documentos que contiene la palabra “alien” en la descripción del avistamiento («summary»).
+
+db.COLECCION.find({summary: {$regex: ".*alien.*"}}).count() 
+
+▸Actualizar los documentos en los que la descripción del avistamiento contiene la palabra HOAX, añadiendo a estos un campo cuyo nombre sea «hoax_warning» y que tenga el valor ‘true’ de tipo booleano. 
+El resto de campos del documento no debe sufrir modificación alguna.
+
+db.COLECCION.update({summary: {$regex: ".*HOAX.*"}},{$set:{hoax_warning:true}},false, true)
+
+▸Mostrar todos los documentos, con todos sus campos, que contienen avistamientos reportados («posted_date») en el mes de marzo. 
+
+db.COLECCION.aggregate([ {$project: { _id: 1, id: 1, ocurred_date_time: 1, city: 1, state: 1, shape: 1, duration: 1, summary: 1, details_url: 1, posted_date: 1, hoax_warning: 1, month: { $month: "$posted_date"}, month: 0}}, {$match: {month: 3}}]).pretty()
+
+▸Para los documentos que contienen avistamientos reportados en el mes de marzo, listar sin repetir las ciudades en las que se han producido las llamadas.
+
+db.COLECCION.aggregate([ {$project: { _id: 1, id: 1, ocurred_date_time: 1, city: 1, state: 1, shape: 1, duration: 1, summary: 1, details_url: 1, posted_date: 1, hoax_warning: 1, month: { $month: "$posted_date"}}}, {$match: {month: 3}},{$group: {_id: "$city"}}]).pretty()
+
+▸Para los documentos que contienen avistamientos reportados en el mes de marzo, listar sin repetir las ciudades en las que se han producido las llamadas y mostrarlas ordenadas alfabéticamente.
+
+db.COLECCION.aggregate([ {$project: { _id: 1, id: 1, ocurred_date_time: 1, city: 1, state: 1, shape: 1, duration: 1, summary: 1, details_url: 1, posted_date: 1, hoax_warning: 1, month: { $month: "$posted_date"}}}, {$match: {month: 3}},{$group: {_id: "$city"}}, {$sort: {_id: 1}}])
+
+▸Para toda la colección, indicar los cinco estados en los que ha habido más avistamientos reportados.
+
+db.COLECCION.aggregate([{ $sortByCount: "$state"},{$match: {"_id":{"$exists": true, "$ne": null}}},{ $limit: 5}])
+
+▸Rellena el espacio en blanco de la siguiente query para que el resultado sea el porcentaje de avistamientos reportados en el que el objeto se describe con forma circular (‘circle’).
+
+db.clean_ufo.aggregate([
+    {$addFields:
+        {isCircle: 
+            {$cond: 
+                { 
+                    if: { $eq: [ "$shape", "Circle" ] },
+                    then: 1, 
+                    else: 0 
+                }
+            }
+        }
+    },
+    {$group: 
+    //PON TU CÓDIGO AQUÍ
+    },
+    {$project:
+“        {"_id":0,
+         "circle_shaped_ratio":
+              {$divide: ["$totalCircles", "$total"]}}
+    }
+])
